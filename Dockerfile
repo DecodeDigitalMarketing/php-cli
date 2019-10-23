@@ -24,6 +24,7 @@ RUN set -ex; \
 	apt-get update; \
 	apt-get install -y --no-install-recommends \
 		libzip-dev \
+		libbz2-dev \
 		libjpeg-dev \
 		libpng-dev \
 		libicu-dev \
@@ -31,7 +32,7 @@ RUN set -ex; \
 	; \
 	\
 	docker-php-ext-configure gd --with-png-dir=/usr --with-jpeg-dir=/usr; \
-	docker-php-ext-install gd pdo pdo_mysql opcache zip intl; \
+	docker-php-ext-install gd pdo pdo_mysql opcache zip bz2 intl; \
 	\
 # reset apt-mark's "manual" list so that "purge --auto-remove" will remove all build dependencies
 	apt-mark auto '.*' > /dev/null; \
