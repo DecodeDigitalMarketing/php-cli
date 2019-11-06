@@ -9,6 +9,7 @@ ENV PATH="/app/vendor/bin:${PATH}"
 RUN set -ex; \
 	apt-get update; \
 	apt-get install -y --no-install-recommends \
+		rsync \
     openssh-client \
     unzip \
     zip \
