@@ -1,22 +1,71 @@
-#!/bin/sh
-# run a command as (non-existent) user, using libnss-wrapper
+#!/bin/bash
 
-U=`id -u`
-G=`id -g`
+HOMEDIR=$HOME
+RUNUID=`id -u`
+RUNGID=`id -g`
 
-HOME_DIR=$HOME
 PASSWD=/var/tmp/passwd
 GROUP=/var/tmp/group
 
-if [ ! -d "$HOME_DIR" ]; then
-  mkdir "$HOME_DIR"
-fi
-if [ ! -f "$PASSWD" ]; then
-  echo "user::$U:$G::$HOME_DIR:" > "$PASSWD"
-fi
-if [ ! -f "$GROUP" ]; then
-  echo "user::$G:" > "$GROUP"
+show_help() {
+	echo "$0 - run a command as (non-existent) user, using libnss-wrapper"
+	echo
+	echo "usage: $0 -h | --help"
+	echo "usage: $0 [option...] <command>"
+	echo
+	echo "  -u, --uid            set the user id to run the command as"
+	echo "  -g, --gid            set the group id to run the command as"
+	echo
+}
+
+# check for optional switches
+POSITIONAL=()
+
+while [[ $# -gt 0 ]]
+do
+	key="$1"
+
+	case $key in
+			-u|--uid)
+			RUNUID="$2"
+			shift # past argument
+			shift # past value
+			;;
+			-g|--gid)
+			RUNGID="$2"
+			shift # past argument
+			shift # past value
+			;;
+			-h|--help)
+			HELP=YES
+			shift # past argument
+			;;
+			*)    # unknown option
+			POSITIONAL+=("$1") # save it in an array for later
+			shift # past argument
+			;;
+	esac
+done
+
+set -- "${POSITIONAL[@]}" # restore positional parameters
+
+# show help if no command supplied or help switch used
+if [[ ! "$@" || $HELP == "YES" ]]; then
+	show_help;
+	exit 0;
 fi
 
-LD_PRELOAD=libnss_wrapper.so NSS_WRAPPER_PASSWD="$PASSWD" NSS_WRAPPER_GROUP="$GROUP" "$@"
+# create "fake" homedir if none exists
+if [ ! -d "$HOMEDIR" ]; then
+  mkdir "$HOMEDIR"
+fi
+
+# write temporary passwd and group files for nss-wrapper
+echo "user::$RUNUID:$RUNGID::$HOMEDIR:" > "$PASSWD"
+echo "user::$RUNGID:" > "$GROUP"
+
+# preload nss-rwapper and run command
+LD_PRELOAD=libnss_wrapper.so \
+	NSS_WRAPPER_PASSWD="$PASSWD" \
+	NSS_WRAPPER_GROUP="$GROUP" "$@"
 
